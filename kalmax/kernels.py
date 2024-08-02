@@ -14,7 +14,7 @@ from kalmax.utils import gaussian_norm_const
 
 def gaussian_kernel(x1 : jnp.ndarray,
                     x2 : jnp.ndarray, 
-                    covariance : jnp.ndarray,
+                    bandwidth : float,
                     ) -> jnp.ndarray:
     """Calculates the gaussian kernel between two points x1 and x2 with covariance
 
@@ -25,8 +25,8 @@ def gaussian_kernel(x1 : jnp.ndarray,
         The first position
     x2: (D,) jnp.ndarray
         The second position
-    covariance: (D, D) jnp.ndarray
-        The covariance of the distribution
+    bandwidth: float
+        The bandwidth of the kernel
     
     Returns
     -------
@@ -35,11 +35,10 @@ def gaussian_kernel(x1 : jnp.ndarray,
     """
     assert x1.ndim == 1
     assert x2.ndim == 1
-    assert covariance.ndim == 2
     assert x1.shape[0] == x2.shape[0]
-    assert x1.shape[0] == covariance.shape[0]
-    assert covariance.shape[0] == covariance.shape[1]
+    D = x1.shape[0]    
 
+    covariance = jnp.eye(D) * bandwidth ** 2
     x = x1 - x2
     norm_const = gaussian_norm_const(covariance)
     kernel = norm_const * jnp.exp(-0.5 * jnp.sum(x @ jnp.linalg.inv(covariance) * x))
@@ -47,8 +46,8 @@ def gaussian_kernel(x1 : jnp.ndarray,
 
 
 def laplacian_kernel(x1 : jnp.ndarray,
-                        x2 : jnp.ndarray,
-                        bandwidth : float) -> jnp.ndarray:
+                     x2 : jnp.ndarray,
+                     bandwidth : float) -> jnp.ndarray:
         """Calculates the laplacian kernel between two points x1 and x2 with bandwidth h
         
         Parameters
@@ -132,8 +131,8 @@ def epanechnikov_kernel(x1 : jnp.ndarray,
     return kernel
 
 def triangular_kernel(x1 : jnp.ndarray,
-                        x2 : jnp.ndarray,
-                        bandwidth : float) -> jnp.ndarray:
+                      x2 : jnp.ndarray,
+                      bandwidth : float) -> jnp.ndarray:
         """Calculates the triangular kernel between two points x1 and x2 with bandwidth h
         
         Parameters

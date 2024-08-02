@@ -12,7 +12,6 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/TomGeorge1234/KalMax", 
     packages=setuptools.find_packages(where='kalmax'),
-    package_dir={'': 'kalmax'},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

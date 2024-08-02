@@ -12,7 +12,7 @@ def kde(
         trajectory: jnp.ndarray,
         spikes: jnp.ndarray,
         kernel,
-        kernel_kwargs: dict = {},
+        kernel_bandwidth: float,
         ) -> jnp.ndarray:
     """
     Performs KDE to estimate the expected number of spikes each neuron will fire at each position in `bins` given past `trajectory` and `spikes` data. This estimate is an expected-spike-count-per-timebin, in order to get firing rate in Hz, divide this by dt.
@@ -34,8 +34,8 @@ def kde(
         The spike counts of the neuron at each time step (integer array, can be > 1)
     kernel : function
         The kernel function to use for density estimation. See `kernels.py` for signature and examples.
-    kernel_kwargs : dict, default={}
-        Any additional arguments to the kernel function
+    kernel_bandwidth : float
+        The bandwidth of the kernel
     
     Returns
     -------
@@ -48,7 +48,7 @@ def kde(
     D = bins.shape[1] # dimension of the space
     
     # vmap the kernel K(x,mu,sigma) so it takes in a vector of positions and a vector of means
-    kernel = partial(kernel, **kernel_kwargs)
+    kernel = partial(kernel, bandwidth=kernel_bandwidth)
     vmapped_kernel = vmap(kernel, in_axes=(0, None))
     vmapped_kernel = vmap(vmapped_kernel, in_axes=(None, 0))
 

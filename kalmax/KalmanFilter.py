@@ -10,14 +10,17 @@ class KalmanFilter:
     """A Kalman filter class. This class is used to filter the data and fit the model.
     Written in jax, the lower level functions are jit compiled for speed. The filtering and smoothing loops are processed in batches using jax.lax.scan(): higher batch sizes will run faster but at the cost of a one-off compilation time."""
 
-    def __init__(self, dim_Z, 
-                       dim_Y,
-                       batch_size = 100, 
+    def __init__(self, dim_Z : int, 
+                       dim_Y : int,
+                       batch_size : int = 100, 
                        # optional parameters
-                       F = None,
-                       Q = None,
-                       H = None,
-                       R = None,):
+                       mu0 : jnp.ndarray = None,
+                       sigma0 : jnp.ndarray = None,
+                       F : jnp.ndarray = None,
+                       Q : jnp.ndarray = None,
+                       H : jnp.ndarray = None,
+                       R : jnp.ndarray = None,
+                       ):
         """Initializes the Kalman class. The state has size dim_Z, the observations have size dim_Y. 
         
         Parameters F, Q, H and R can either be:
@@ -35,6 +38,10 @@ class KalmanFilter:
 
         Optional parameters
         -------------------
+        mu0 : jnp.ndarray, shape (dim_Z,)
+            The initial state mean
+        sigma0 : jnp.ndarray, shape (dim_Z, dim_Z)
+            The initial state covariance
         F : jnp.ndarray, shape (dim_Z, dim_Z)
             The state transition matrix
         Q : jnp.ndarray, shape (dim_Z, dim_Z)
@@ -50,6 +57,10 @@ class KalmanFilter:
         self.batch_size = batch_size
 
         # Optionally set parameters and initial conditions now
+        if mu0 is not None:
+            assert mu0.shape == (self.dim_Z,)
+        if sigma0 is not None:
+            assert sigma0.shape == (self.dim_Z, self.dim_Z)
         if F is not None:
             assert F.shape == (self.dim_Z, self.dim_Z)
         if Q is not None:
@@ -58,14 +69,17 @@ class KalmanFilter:
             assert H.shape == (self.dim_Y, self.dim_Z)
         if R is not None:
             assert R.shape == (self.dim_Y, self.dim_Y)
+    
+        self.mu0 = mu0
+        self.sigma0 = sigma0
         self.F = F
         self.Q = Q
         self.H = H
         self.R = R
 
     def filter(self, Y, 
-                     mu0, 
-                     sigma0, 
+                     mu0=None, 
+                     sigma0=None, 
                      F=None,
                      Q=None,
                      H=None,
@@ -77,17 +91,17 @@ class KalmanFilter:
         Y : jnp.ndarray, shape (T, dim_Z)
             The observation means
         mu0 : jnp.ndarray, shape (dim_Z,)
-            The initial state mean
+            The initial state mean, optional (default is provided at initialisation)
         sigma0 : jnp.ndarray, shape (dim_Z, dim_Z)
-            The initial state covariance
+            The initial state covariance, optional (default is provided at initialisation)
         F : jnp.ndarray, shape (T, dim_Z, dim_Z)
-            The state transition matrix, optional
+            The state transition matrix, optional (default is provided at initialisation)
         Q : jnp.ndarray, shape (T, dim_Z, dim_Z)
-            The state transition noise covariance, optional
+            The state transition noise covariance, optional (default is provided at initialisation)
         H : jnp.ndarray, shape (T, dim_Z, dim_Z)
-            The observation matrix, optional
+            The observation matrix, optional (default is provided at initialisation)
         R : jnp.ndarray, shape (T, dim_Z, dim_Z)
-            The observation noise covariances, optional
+            The observation noise covariances, optional (default is provided at initialisation)
 
 
         Returns
@@ -98,10 +112,18 @@ class KalmanFilter:
             The filtered covariances
         """
         assert Y.ndim == 2; assert Y.shape[1] == self.dim_Y
-        assert mu0.ndim == 1; assert mu0.shape[0] == self.dim_Z
-        assert sigma0.ndim == 2; assert sigma0.shape[0] == self.dim_Z; assert sigma0.shape[1] == self.dim_Z
         T = Y.shape[0] # number of time steps
 
+        if mu0 is None: 
+            assert self.mu0 is not None, "You must either pass in the initial conditions or set them at initialisation"
+            mu0 = self.mu0
+        else: 
+            assert mu0.ndim == 1; assert mu0.shape[0] == self.dim_Z
+        if sigma0 is None:
+            assert self.sigma0 is not None, "You must either pass in the initial conditions or set them at initialisation"
+            sigma0 = self.sigma0
+        else:
+            assert sigma0.ndim == 2; assert sigma0.shape[0] == self.dim_Z; assert sigma0.shape[1] == self.dim_Z
         F = self._verify_and_tile(F, self.F, T, (self.dim_Z, self.dim_Z))
         Q = self._verify_and_tile(Q, self.Q, T, (self.dim_Z, self.dim_Z))
         H = self._verify_and_tile(H, self.H, T, (self.dim_Y, self.dim_Z))
@@ -311,7 +333,6 @@ def kalman_smoother(mu, sigma, muT, sigmaT, F, Q):
     sigma_smooth : jnp.ndarray, shape (T, dim_Z, dim_Z)
         The smoothed state covariances
     """
-    print(mu.shape, sigma.shape, F.shape, Q.shape)
     def loop(carry, inputs):
         mu, sigma = carry
         mu_, sigma_, F, Q = inputs

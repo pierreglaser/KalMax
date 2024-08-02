@@ -41,13 +41,13 @@ firing_rate = kalmax.KDE.kde(
 
 
 ```python
-# TEST SPIKE LOG LIKELIHOODS using kalmax.poisson_log_likelihood
+# 2.1 CALCULATE LIKELIHOODS using kalmax.poisson_log_likelihood
 log_likelihoods = poisson_log_likelihood(
     spikes = S_test,                       
     mean_rate = firing_rate,
     ) # --> (T_TEST, N_CELLS)
 
-# FIT GAUSSIAN TO LIKELIHOODS using kalmax.utils.fit_gaussian
+# 2.2 FIT GAUSSIAN TO LIKELIHOODS using kalmax.utils.fit_gaussian
 MLE_means, MLE_modes, MLEcovs = kalmax.utils.fit_gaussian_vmap(
     x = bins, 
     likelihoods = jnp.exp(log_likelihoods),
@@ -56,7 +56,7 @@ MLE_means, MLE_modes, MLEcovs = kalmax.utils.fit_gaussian_vmap(
 <img src="figures/display_figures/likelihood_maps_fitted.png" width=850>
 
 ```python
-# KALMAN FILTER / SMOOTH using kalmax.KalmanFilter.KalmanFilter
+# 3. KALMAN FILTER / SMOOTH using kalmax.KalmanFilter.KalmanFilter
 kalman_filter = KalmanFilter(
     dim_Z = DIMS, 
     dim_Y = N_CELLS,
@@ -67,13 +67,13 @@ kalman_filter = KalmanFilter(
     R=R, # observation noise covariance
     )
 
-# FILTER 
+# [FILTER]
 mus_f, sigmas_f = kalman_filter.filter(
     Y = Y, 
     mu0 = mu0,
     sigma0 = sigma0,)
 
-# SMOOTH
+# [SMOOTH]
 mus_s, sigmas_s = kalman_filter.smooth(
     mus_f = mus_f, 
     sigmas_f = sigmas_f,)
