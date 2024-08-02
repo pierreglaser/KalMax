@@ -8,7 +8,7 @@ You provide $\mathbf{S} \in \mathbb{R}^{T \times N}$ (spike counts) and $\mathbf
 
 Note this differs from the standard Kalman filter where spikes counts (or perhaps spike rates) are treated as the observations. 
 
----
+
 # Usage  
 
 A full demo is provided in the `kalmax_demo` folder. Sudo-code is provided below. 
@@ -20,10 +20,10 @@ import jax.numpy as jnp
 
 ```python
 # 0. PREPARE DATA IN JAX ARRAYS
-S_train = jnp.array(...) # (T, N_CELLS)      train spike counts (T, N_CELLS) 
-Z_train = jnp.array(...) # (T, DIMS)         train continuous variable (T, DIMS)
-S_test  = jnp.array(...) # (T_TEST, N_CELLS) test spike counts (T_TEST, N_CELLS)
-bins    = jnp.array(...) # (N_BINS, DIMS)    coordinates at which to estimate receptive fields / likelihoods (N_BINS, DIMS)
+S_train = jnp.array(...) # (T, N_CELLS)      train spike counts
+Z_train = jnp.array(...) # (T, DIMS)         train continuous variable
+S_test  = jnp.array(...) # (T_TEST, N_CELLS) test spike counts
+bins    = jnp.array(...) # (N_BINS, DIMS)    coordinates at which to estimate receptive fields / likelihoods)
 ```
 <img src="figures/display_figures/data.png" width=850>
 
@@ -57,13 +57,25 @@ MLE_means, MLE_modes, MLEcovs = kalmax.utils.fit_gaussian_vmap(
 
 ```python
 # KALMAN FILTER / SMOOTH using kalmax.KalmanFilter.KalmanFilter
-kalman_filter = KalmanFilter(dim_Z = DIMS, 
-                             dim_Y = N_CELLS,
-                             # SEE DEMO FOR HOW TO SET THESE
-                             F=F, # state transition matrix
-                             Q=Q, # state noise covariance
-                             H=H, # observation matrix
-                             R=R, # observation noise covariance
+kalman_filter = KalmanFilter(
+    dim_Z = DIMS, 
+    dim_Y = N_CELLS,
+    # SEE DEMO FOR HOW TO FIT/SET THESE
+    F=F, # state transition matrix
+    Q=Q, # state noise covariance
+    H=H, # observation matrix
+    R=R, # observation noise covariance
     )
+
+# FILTER 
+mus_f, sigmas_f = kalman_filter.filter(
+    Y = Y, 
+    mu0 = mu0,
+    sigma0 = sigma0,)
+
+# SMOOTH
+mus_s, sigmas_s = kalman_filter.smooth(
+    mus_f = mus_f, 
+    sigmas_f = sigmas_f,)
 ```
 <img src="figures/display_figures/kalmax.png" width=850>

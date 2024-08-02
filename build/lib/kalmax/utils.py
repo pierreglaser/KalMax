@@ -1,4 +1,3 @@
-import jax 
 import jax.numpy as jnp
 import tqdm as tqdm
 
@@ -77,12 +76,6 @@ def fit_gaussian(x, likelihood):
     mode = x[jnp.argmax(likelihood)]
     covariance = ((x - mu) * likelihood[:, None]).T @ (x - mu) / likelihood.sum()
     return mu, mode, covariance
-
-
-# Like fit_gaussian, but accepts likelihoods of shape (T, N_bins)
-# returns means, modes and covariances of shape (T, D), (T, D), (T, D, D)
-fit_gaussian_vmap = jax.vmap(fit_gaussian, in_axes=(None, 0)) 
-
 
 
 def make_simulated_dataset(time_mins = 60, n_cells = 100, firing_rate = 10, random_seed=None, **kwargs):
