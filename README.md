@@ -1,17 +1,31 @@
 # **KalMax**:  Kalman based neural decoding in Jax
 **KalMax** = **Kal**man smoothing of **Max**imum likelihood estimates in Jax.
 
-You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{Z} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and this provides jax-optimised functions to:
+You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{Z} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and this provides jax-optimised functions and classes to:
+
 1. Fit receptive fields for each neuron using Kernel density estimation 
 2. Calculate the likelihood of new spike counts given these receptive fields, then approximate these as Gaussians: $P(\mathbf{s}_t|\mathbf{z}) \approx \mathcal{N}(\mathbf{z}; \boldsymbol{\mu}_t, \boldsymbol{\Sigma}_t)$
-3. Kalman filter/smooth these estimates to estimate latent variable on held-out test spikes: $P(\mathbf{z}_t|\boldsymbol{\mu}_{1:t})$ (kalman filter) and $P(\mathbf{z}_t|\boldsymbol{\mu}_{1:T})$ (kalman smoother)
+3. Kalman filter $P(\mathbf{z}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{z}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
 
 Note this differs from the standard Kalman filter where spikes counts (or perhaps spike rates) are treated as the observations. 
 
+# Install
+Clone and navigate to this folder and run 
+```
+git clone https://github.com/TomGeorge1234/KalMax.git
+cd KalMax
+pip install -e .
+```
+(`-e`) is optional for developer install. 
+
+Alternatively 
+```
+pip install git+https://github.com/TomGeorge1234/KalMax.git
+```
 
 # Usage  
 
-A full demo is provided in the `kalmax_demo` folder. Sudo-code is provided below. 
+A full demo is provided in the [`kalmax_demo.ipynb`](./kalmax_demo.ipynb). Sudo-code is provided below. 
 
 ```python
 import kalmax 
@@ -48,7 +62,7 @@ log_likelihoods = poisson_log_likelihood(
     ) # --> (T_TEST, N_CELLS)
 
 # 2.2 FIT GAUSSIAN TO LIKELIHOODS using kalmax.utils.fit_gaussian
-MLE_means, MLE_modes, MLEcovs = kalmax.utils.fit_gaussian_vmap(
+MLE_means, MLE_modes, MLE_covs = kalmax.utils.fit_gaussian_vmap(
     x = bins, 
     likelihoods = jnp.exp(log_likelihoods),
     ) # --> (N_CELLS, DIMS), (N_CELLS, DIMS, DIMS)
@@ -64,18 +78,20 @@ kalman_filter = KalmanFilter(
     F=F, # state transition matrix
     Q=Q, # state noise covariance
     H=H, # observation matrix
-    R=R, # observation noise covariance
-    )
+    R=None, # observation noise covariance
+    ) 
 
 # [FILTER]
 mus_f, sigmas_f = kalman_filter.filter(
     Y = Y, 
     mu0 = mu0,
-    sigma0 = sigma0,)
+    sigma0 = sigma0,
+    ) --> (T, DIMS), (T, DIMS, DIMS)
 
 # [SMOOTH]
 mus_s, sigmas_s = kalman_filter.smooth(
     mus_f = mus_f, 
-    sigmas_f = sigmas_f,)
+    sigmas_f = sigmas_f,
+    ) --> (T, DIMS), (T, DIMS, DIMS)
 ```
 <img src="figures/display_figures/kalmax.png" width=850>
