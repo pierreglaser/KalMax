@@ -33,6 +33,38 @@ def gaussian_pdf(x : jnp.ndarray,
     norm_const = gaussian_norm_const(sigma)
     return norm_const * jnp.exp(-0.5 * jnp.sum(x @ jnp.linalg.inv(sigma) * x, axis=-1))
 
+def log_gaussian_pdf(x : jnp.ndarray,
+                     mu : jnp.ndarray,
+                     sigma : jnp.ndarray,) -> jnp.ndarray:
+    """ Calculates the log of the gaussian pdf of a multivariate normal distribution of mean mu and covariance sigma at x
+
+    Parameters
+    ----------
+    x: (D,) array
+        The position at which to evaluate the pdf
+    mu: (D,) array
+        The mean of the distribution
+    sigma: (D, D) array
+        The covariance of the distribution
+
+    Returns 
+    -------
+    log_pdf: float
+        The log probability density at x
+    """
+    assert x.ndim == 1
+    assert mu.ndim == 1
+    assert sigma.ndim == 2
+    assert x.shape[0] == mu.shape[0]
+    assert x.shape[0] == sigma.shape[0]
+    assert sigma.shape[0] == sigma.shape[1]
+
+    x = x - mu
+    norm_const = gaussian_norm_const(sigma)
+    return jnp.log(norm_const) - 0.5 * jnp.sum(x @ jnp.linalg.inv(sigma) * x)
+
+
+
 def gaussian_norm_const(sigma : jnp.ndarray) -> jnp.ndarray:
     """Calculates the normalizing constant of a multivariate normal distribution with covariance sigma
 
@@ -105,10 +137,9 @@ def make_simulated_dataset(time_mins = 60, n_cells = 100, firing_rate = 10, rand
         The spikes of the 50 place cells at each time point
     """
 
-    import ratinabox
     from ratinabox.Environment import Environment 
     from ratinabox.Agent import Agent 
-    from ratinabox.Neurons import PlaceCells, GridCells
+    from ratinabox.Neurons import PlaceCells
 
     if random_seed is not None:
         import numpy as np
@@ -121,6 +152,7 @@ def make_simulated_dataset(time_mins = 60, n_cells = 100, firing_rate = 10, rand
     env = Environment(params=env_params)
     agent = Agent(env, params=agent_params)
     place_cells = PlaceCells(agent, params=place_cell_params)
+    
 
     for i in tqdm.tqdm(range(int(60 * time_mins / agent.dt))):
         agent.update()
@@ -131,3 +163,4 @@ def make_simulated_dataset(time_mins = 60, n_cells = 100, firing_rate = 10, rand
     spikes = jnp.array(place_cells.history['spikes'])
 
     return time, position, spikes
+

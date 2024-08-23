@@ -1,16 +1,19 @@
-# **KalMax**:  Kalman based neural decoding in Jax
+# **KalMax**:  Kalman based neural decoding in Jax 
 **KalMax** = **Kal**man smoothing of **Max**imum likelihood estimates in Jax.
 
-You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{Z} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and this provides jax-optimised functions and classes to:
+
+You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{X} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and `KalMax`` provides jax-optimised functions and classes to:
 
 1. Fit receptive fields for each neuron using Kernel density estimation 
-2. Calculate the likelihood of new spike counts given these receptive fields, then approximate these as Gaussians: $P(\mathbf{s}_t|\mathbf{z}) \approx \mathcal{N}(\mathbf{z}; \boldsymbol{\mu}_t, \boldsymbol{\Sigma}_t)$
-3. Kalman filter $P(\mathbf{z}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{z}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
+2. Calculate the likelihood of new spike counts given these receptive fields, then approximate these as Gaussians: $P(\mathbf{s}_t|\mathbf{x}) \approx \mathcal{N}(\mathbf{x}; \boldsymbol{\mu}_t, \boldsymbol{\Sigma}_t)$
+3. Kalman filter $P(\mathbf{x}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{x}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
 
-Note this differs from the standard Kalman filter where spikes counts (or perhaps spike rates) are treated as the observations. 
+This is a very fast and accurate approach to neural decoding, the best of both worlds between Maximum likelihood decoding (which accounts for non-linear dependendies between position and spikes) and Kalman filtering (which accounts for temporal continuity in the trajectory). Outperforming both in terms of accuracy (see [demo](./kalmax_demp.ipynb)[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/TomGeorge1234/KalMax/blob/main/kalmax_demo.ipynb)) for essentially no extra computational cost.
+* Maximum likelihood decoding accounts for the non-linear relationship between position and spike counts (by fitting receptive fields) but does not account for temporal dependencies in the trajectory.
+* Kalman filtering accounts for temporal dependencies but assumes a linear relationship between position and spike counts (which in reality is non-linear).
+
 
 # Install
-Clone and navigate to this folder and run 
 ```
 git clone https://github.com/TomGeorge1234/KalMax.git
 cd KalMax
@@ -78,7 +81,7 @@ kalman_filter = KalmanFilter(
     F=F, # state transition matrix
     Q=Q, # state noise covariance
     H=H, # observation matrix
-    R=None, # observation noise covariance
+    R=R, # observation noise covariance
     ) 
 
 # [FILTER]
@@ -86,12 +89,12 @@ mus_f, sigmas_f = kalman_filter.filter(
     Y = Y, 
     mu0 = mu0,
     sigma0 = sigma0,
-    ) --> (T, DIMS), (T, DIMS, DIMS)
+    ) # --> (T, DIMS), (T, DIMS, DIMS)
 
 # [SMOOTH]
 mus_s, sigmas_s = kalman_filter.smooth(
     mus_f = mus_f, 
     sigmas_f = sigmas_f,
-    ) --> (T, DIMS), (T, DIMS, DIMS)
+    ) # --> (T, DIMS), (T, DIMS, DIMS)
 ```
 <img src="figures/display_figures/kalmax.png" width=850>

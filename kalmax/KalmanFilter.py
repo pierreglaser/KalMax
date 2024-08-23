@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax import jit, vmap
 import math
-from kalmax.utils import gaussian_pdf
+from kalmax.utils import gaussian_pdf, log_gaussian_pdf
 
 # TODO check that jnp.einsum isn't slowing things down
 
@@ -201,13 +201,12 @@ class KalmanFilter:
 
         return mus_s, sigmas_s
 
-
     def loglikelihood(self, Y,
                             mu, 
                             sigma, 
                             H=None, 
                             R=None,):
-        """Calculates the log-likelihood of the fitted (filtered or smoothed) Kalman model. This can be done analytically (seep age 361 of the Advanced Murphy book). 
+        """Calculates the log-likelihood of the observations, Y, by marginalising over the hidden state [mu, sigma] (filtered or smoothed). This can be done analytically (see page 361 of the Advanced Murphy book). 
 
         P(Y) = Normal(Y | Y_hat, S) where S = H @ sigma @ H.T + R (the posterior observation covariance combined with the observation noise covariance) Y_hat = H @ mu (the predicted observation). 
 
@@ -236,8 +235,8 @@ class KalmanFilter:
             
         S = vmap(calculate_S_matrix, (0, 0, 0))(sigma, H, R)
         Y_hat = jnp.einsum('ijk,ik->ij', H, mu) # the "observation" mean
-        P = vmap(gaussian_pdf, (0, 0, 0))(Y, Y_hat, S)
-        logP = jnp.log(P) # TODO multiply this by a volume element to get actual probability
+        logP = vmap(log_gaussian_pdf, (0, 0, 0))(Y, Y_hat, S)
+        # logP = jnp.log(P) # TODO multiply this by a volume element to get actual probability
 
         return logP
 
@@ -485,7 +484,7 @@ def calculate_K_matrix(sigma, H, S):
     return sigma @ H.T @ jnp.linalg.inv(S)
 
 def fit_parameters(Z, Y): 
-    """Assuming a training set exists where hidden states Z and observations Y are known, this function fits the optimal temporally-constant parameters of the Kalman filter, i.e. returning those that maximise the likelihood of the data and the state: L(Θ) = log({z},{y} | Θ). These solutions are (relatively) easy to derive, I took them from Byron Yu's lecture notes (they look a lot like linear regression solutions): 
+    """Assuming a training set exists where hidden states Z and observations Y are known, this function fits the optimal stationary parameters of the Kalman filter, i.e. returning those that maximise the likelihood of the data and the state: L(Θ) = log({z},{y} | Θ). These solutions are (relatively) easy to derive, I took them from Byron Yu's lecture notes (they look a lot like linear regression solutions): 
     
     mu0 = (1/T) Σ{zt}
     sigma0 = (1/T) Σ{zt - mu0}{zt - mu0}.T
@@ -530,3 +529,105 @@ def fit_parameters(Z, Y):
     R = (1 / T) * (Y - Z @ H.T).T @ (Y - Z @ H.T)
 
     return mu0, sigma0, F, Q, H, R
+
+def fit_mu0(Z):
+    """Fits the initial state mean of the Kalman filter under the assumption of stationary dynamics, see `fit_parameters` for more details.
+
+    Parameters
+    ----------
+    Z : jnp.ndarray, shape (T, dim_Z)
+        The hidden states (training data) 
+
+    Returns
+    -------
+    mu0 : jnp.ndarray, shape (dim_Z,)
+        The initial state mean
+    """
+    return Z.mean(axis=0)
+
+def fit_sigma0(Z):
+    """Fits the initial state covariance of the Kalman filter under the assumption of stationary dynamics, see `fit_parameters` for more details.
+
+    Parameters
+    ----------
+    Z : jnp.ndarray, shape (T, dim_Z)
+        The hidden states (training data) 
+
+    Returns
+    -------
+    sigma0 : jnp.ndarray, shape (dim_Z, dim_Z)
+        The initial state covariance
+    """
+    T = Z.shape[0]
+    mu0 = Z.mean(axis=0)
+    return (1 / T) * ((Z - mu0).T @ (Z - mu0))
+
+def fit_F(Z):
+    """Fits the state transition matrix of the Kalman filter under the assumption of stationary dynamics, see `fit_parameters` for more details.
+
+    Parameters
+    ----------
+    Z : jnp.ndarray, shape (T, dim_Z)
+        The hidden states (training data) 
+
+    Returns
+    -------
+    F : jnp.ndarray, shape (dim_Z, dim_Z)
+        The state transition matrix
+    """
+    return (Z[1:].T @ Z[:-1]) @ jnp.linalg.inv(Z.T @ Z)
+
+def fit_Q(Z):
+    """Fits the state transition noise covariance of the Kalman filter under the assumption of stationary dynamics, see `fit_parameters` for more details.
+
+    Parameters
+    ----------
+    Z : jnp.ndarray, shape (T, dim_Z)
+        The hidden states (training data) 
+
+    Returns
+    -------
+    Q : jnp.ndarray, shape (dim_Z, dim_Z)
+        The state transition noise covariance
+    """
+    T = Z.shape[0]
+    F = (Z[1:].T @ Z[:-1]) @ jnp.linalg.inv(Z.T @ Z)
+    return (1 / (T-1)) * (Z[1:] - Z[:-1] @ F.T).T @ (Z[1:] - Z[:-1] @ F.T)
+
+def fit_H(Z, Y):
+    """Fits the observation matrix of the Kalman filter under the assumption of stationary dynamics, see `fit_parameters` for more details.
+
+    Parameters
+    ----------
+    Z : jnp.ndarray, shape (T, dim_Z)
+        The hidden states (training data) 
+    Y : jnp.ndarray, shape (T, dim_Y)
+        The observations (training data)
+
+    Returns
+    -------
+    H : jnp.ndarray, shape (dim_Y, dim_Z)
+        The observation matrix
+    """
+    return (Y.T @ Z) @ jnp.linalg.inv(Z.T @ Z)
+
+def fit_R(Z, Y):
+    """Fits the observation noise covariance of the Kalman filter under the assumption of stationary dynamics, see `fit_parameters` for more details.
+
+    Parameters
+    ----------
+    Z : jnp.ndarray, shape (T, dim_Z)
+        The hidden states (training data) 
+    Y : jnp.ndarray, shape (T, dim_Y)
+        The observations (training data)
+
+    Returns
+    -------
+    R : jnp.ndarray, shape (dim_Y, dim_Y)
+        The observation noise covariance
+    """
+    T = Z.shape[0]
+    H = (Y.T @ Z) @ jnp.linalg.inv(Z.T @ Z)
+    return (1 / T) * (Y - Z @ H.T).T @ (Y - Z @ H.T)
+
+
