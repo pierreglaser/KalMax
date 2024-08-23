@@ -19,6 +19,8 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
     install_requires=[
-        'jax', 'tqdm', 'ratinabox'
+        'jax', 'tqdm', 'ratinabox', 'matplotlib',
     ],
+    extras_require={
+        'demo': ['matplotlib', 'tqdm'],
 )
