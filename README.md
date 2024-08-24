@@ -8,9 +8,8 @@ You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf
 2. Calculate the likelihood of new spike counts given these receptive fields, then approximate these as Gaussians: $P(\mathbf{s}_t|\mathbf{x}) \approx \mathcal{N}(\mathbf{x}; \boldsymbol{\mu}_t, \boldsymbol{\Sigma}_t)$
 3. Kalman filter $P(\mathbf{x}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{x}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
 
-This is a very fast and accurate approach to neural decoding, the best of both worlds between Maximum likelihood decoding (which accounts for non-linear dependendies between position and spikes) and Kalman filtering (which accounts for temporal continuity in the trajectory). Outperforming both in terms of accuracy (see [demo](./kalmax_demp.ipynb)[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/TomGeorge1234/KalMax/blob/main/kalmax_demo.ipynb)) for essentially no extra computational cost.
-* Maximum likelihood decoding accounts for the non-linear relationship between position and spike counts (by fitting receptive fields) but does not account for temporal dependencies in the trajectory.
-* Kalman filtering accounts for temporal dependencies but assumes a linear relationship between position and spike counts (which in reality is non-linear).
+This is a very fast and accurate approach to neural decoding, the best of both worlds between maximum likelihood decoding (which accounts for non-linear dependendies between position and spikes) and Kalman filtering (which accounts for temporal continuity in the trajectory). Outperforming both in terms of accuracy (see [demo](./kalmax_demp.ipynb)) for essentially no extra computational cost.
+
 
 
 # Install
@@ -28,7 +27,7 @@ pip install git+https://github.com/TomGeorge1234/KalMax.git
 
 # Usage  
 
-A full demo is provided in the [`kalmax_demo.ipynb`](./kalmax_demo.ipynb). Sudo-code is provided below. 
+A full demo [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/TomGeorge1234/KalMax/blob/main/kalmax_demo.ipynb) is provided in the [`kalmax_demo.ipynb`](./kalmax_demo.ipynb). Sudo-code is provided below. 
 
 ```python
 import kalmax 
@@ -68,7 +67,7 @@ log_likelihoods = poisson_log_likelihood(
 MLE_means, MLE_modes, MLE_covs = kalmax.utils.fit_gaussian_vmap(
     x = bins, 
     likelihoods = jnp.exp(log_likelihoods),
-    ) # --> (N_CELLS, DIMS), (N_CELLS, DIMS, DIMS)
+    ) # --> (T_TEST, DIMS), (T_TEST, DIMS, DIMS)
 ```
 <img src="figures/display_figures/likelihood_maps_fitted.png" width=850>
 
