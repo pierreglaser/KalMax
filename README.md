@@ -1,18 +1,22 @@
 # **KalMax**:  Kalman based neural decoding in Jax 
 **KalMax** = **Kal**man smoothing of **Max**imum likelihood estimates in Jax.
 
+You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{X} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and `KalMax` provides jax-optimised functions and classes for:
 
-You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{X} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and `KalMax` provides jax-optimised functions and classes to:
+<img src="figures/display_figures/input_data.png" width=350>
 
-1. **Fit receptive fields** for each neuron using Kernel density estimation 
-2. **Calculate poisson spike likelihood** maps then approximate these as Gaussians: $P(\mathbf{s}_t|\mathbf{x}) \approx \mathcal{N}(\mathbf{x}; \boldsymbol{\mu}_t, \boldsymbol{\Sigma}_t)$
-3. **Kalman filter** $P(\mathbf{x}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{x}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
+1. **Fitting rate maps** using kernel density estimation (KDE)
+2. **Calculating likelihood** maps $P(\mathbf{s}_t|\mathbf{x})$
+3. **Kalman filter / smoother** 
 
-This is a efficient approach to neural decoding; the best of both worlds between maximum likelihood decoding (which accounts for non-linear dependendies between position and spikes but is not smooth) and Kalman filtering (which accounts for temporal continuity in the trajectory but is linear). Outperforming both in terms of accuracy (see [demo](./kalmax_demo.ipynb)) for essentially no extra computational cost.
+
+#### Why are these functionalities combined into one package?...
+
+Because Likelihood Estimation + Kalman filtering = Powerful neural decoding. By Kalman filtering/smoothing the maximum likelihood estimates (as opposed to the spikes themselves) we bypass the issues of naive Kalman filters (spikes are rarely linearly related to position) and maximum likelihood decoding (which does not account for temporal continuity in the trajectory), outperforming both for no extra computational cost.
 <img src="figures/display_figures/filter_comparisons.gif" width=850>
 
 
-Core `KalMax` functions are optimised and jit-compiled in jax making them **very fast**. `KalMax` is >13 times faster than the equivalent numpy implementation by  the popular [`pykalman`](https://github.com/pykalman/pykalman/tree/master) library (see [demo](./kalmax_demo.ipynb)).
+Core `KalMax` functions are optimised and jit-compiled in jax making them **very fast**. For example `KalMax` kalman filtering is >13 times faster than an equivalent numpy implementation by the popular [`pykalman`](https://github.com/pykalman/pykalman/tree/master) library (see [demo](./kalmax_demo.ipynb)).
 
 <img src="figures/display_figures/kalman_speed_comparison.png" width=150>
 
