@@ -1,6 +1,7 @@
 # **KalMax**:  Kalman based neural decoding in Jax 
 **KalMax** = **Kal**man smoothing of **Max**imum likelihood estimates in Jax.
 
+<img src="figures/display_figures/filter_comparisons.gif" width=850>
 
 You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{X} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and `KalMax` provides jax-optimised functions and classes to:
 
@@ -45,7 +46,7 @@ bins    = jnp.array(...) # (N_BINS, DIMS)    coordinates at which to estimate re
 
 ```python
 # 1. FIT RECEPTIVE FIELDS using kalmax.kde
-firing_rate = kalmax.KDE.kde(
+firing_rate = kalmax.kde.kde(
     bins = bins,
     trajectory = Z_train,
     spikes = S_train,
@@ -58,7 +59,7 @@ firing_rate = kalmax.KDE.kde(
 
 ```python
 # 2.1 CALCULATE LIKELIHOODS using kalmax.poisson_log_likelihood
-log_likelihoods = poisson_log_likelihood(
+log_likelihoods = kalmax.kde.poisson_log_likelihood(
     spikes = S_test,                       
     mean_rate = firing_rate,
     ) # --> (T_TEST, N_CELLS)
@@ -73,7 +74,7 @@ MLE_means, MLE_modes, MLE_covs = kalmax.utils.fit_gaussian_vmap(
 
 ```python
 # 3. KALMAN FILTER / SMOOTH using kalmax.KalmanFilter.KalmanFilter
-kalman_filter = KalmanFilter(
+kalman_filter = kalmax.kalman.KalmanFilter(
     dim_Z = DIMS, 
     dim_Y = N_CELLS,
     # SEE DEMO FOR HOW TO FIT/SET THESE
@@ -96,4 +97,3 @@ mus_s, sigmas_s = kalman_filter.smooth(
     sigmas_f = sigmas_f,
     ) # --> (T, DIMS), (T, DIMS, DIMS)
 ```
-<img src="figures/display_figures/kalmax.png" width=850>
