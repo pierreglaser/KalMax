@@ -3,11 +3,13 @@
 
 You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{X} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and `KalMax` provides jax-optimised functions and classes for:
 
-<img src="figures/display_figures/input_data.png" width=350>
-
 1. **Fitting rate maps** using kernel density estimation (KDE)
 2. **Calculating likelihood** maps $P(\mathbf{s}_t|\mathbf{x})$
-3. **Kalman filter / smoother** 
+3. **Kalman filter / smoother**
+
+<img src="figures/display_figures/input_data.png" width=350>
+
+
 
 
 #### Why are these functionalities combined into one package?...
