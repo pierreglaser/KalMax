@@ -1,7 +1,6 @@
 # **KalMax**:  Kalman based neural decoding in Jax 
 **KalMax** = **Kal**man smoothing of **Max**imum likelihood estimates in Jax.
 
-<img src="figures/display_figures/filter_comparisons.gif" width=850>
 
 You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{X} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and `KalMax` provides jax-optimised functions and classes to:
 
@@ -10,7 +9,12 @@ You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf
 3. Kalman filter $P(\mathbf{x}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{x}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
 
 This is a very fast and accurate approach to neural decoding, the best of both worlds between maximum likelihood decoding (which accounts for non-linear dependendies between position and spikes) and Kalman filtering (which accounts for temporal continuity in the trajectory). Outperforming both in terms of accuracy (see [demo](./kalmax_demp.ipynb)) for essentially no extra computational cost.
+<img src="figures/display_figures/filter_comparisons.gif" width=850>
 
+
+Core `KalMax` functions are optimised and jit-compiled in jax making them **very fast**. `KalMax` is >13 times faster than the equivalent numpy implementation by  the popular [`pykalman`](https://github.com/pykalman/pykalman/tree/master) library (see [demo](./kalmax_demo.ipynb)).
+
+<img src="figures/display_figures/kalman_speed_comparison.png" width=150>
 
 
 # Install
