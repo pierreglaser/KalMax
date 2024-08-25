@@ -4,11 +4,11 @@
 
 You provide $\mathbf{S} \in \mathbb{N}^{T \times N}$ (spike counts) and $\mathbf{X} \in \mathbb{R}^{T \times D}$ (a continuous variable, e.g. position) and `KalMax` provides jax-optimised functions and classes to:
 
-1. Fit receptive fields for each neuron using Kernel density estimation 
-2. Calculate the likelihood of new spike counts given these receptive fields, then approximate these as Gaussians: $P(\mathbf{s}_t|\mathbf{x}) \approx \mathcal{N}(\mathbf{x}; \boldsymbol{\mu}_t, \boldsymbol{\Sigma}_t)$
-3. Kalman filter $P(\mathbf{x}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{x}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
+1. **Fit receptive fields** for each neuron using Kernel density estimation 
+2. **Calculate poisson spike likelihood** maps then approximate these as Gaussians: $P(\mathbf{s}_t|\mathbf{x}) \approx \mathcal{N}(\mathbf{x}; \boldsymbol{\mu}_t, \boldsymbol{\Sigma}_t)$
+3. **Kalman filter** $P(\mathbf{x}_t|\boldsymbol{\mu} _ {1:t})$ and smooth $P(\mathbf{x}_t | \boldsymbol{\mu} _ {1:T})$ these to estimate latent variable on held-out test spikes.
 
-This is a very fast and accurate approach to neural decoding, the best of both worlds between maximum likelihood decoding (which accounts for non-linear dependendies between position and spikes) and Kalman filtering (which accounts for temporal continuity in the trajectory). Outperforming both in terms of accuracy (see [demo](./kalmax_demp.ipynb)) for essentially no extra computational cost.
+This is a efficient approach to neural decoding; the best of both worlds between maximum likelihood decoding (which accounts for non-linear dependendies between position and spikes but is not smooth) and Kalman filtering (which accounts for temporal continuity in the trajectory but is linear). Outperforming both in terms of accuracy (see [demo](./kalmax_demo.ipynb)) for essentially no extra computational cost.
 <img src="figures/display_figures/filter_comparisons.gif" width=850>
 
 
