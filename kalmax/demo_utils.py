@@ -1,4 +1,5 @@
 # Some (mostly plotting and poorly written) utilities for the Kalman filter demo
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
