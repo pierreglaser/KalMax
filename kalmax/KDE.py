@@ -54,7 +54,7 @@ def kde(
 
     N_neurons = spikes.shape[1]
 
-    # If not passed make a no-mask mask (all True)
+    # If not passed make a trivial mask (all True)
     if mask is None: mask = jnp.ones_like(spikes, dtype=bool)
     
     # vmap the kernel K(x,mu,sigma) so it takes in a vector of positions and a vector of means
