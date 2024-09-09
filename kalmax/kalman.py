@@ -8,7 +8,19 @@ from kalmax.utils import gaussian_pdf, log_gaussian_pdf
 
 class KalmanFilter:
     """A Kalman filter class. This class is used to filter the data and fit the model.
-    Written in jax, the lower level functions are jit compiled for speed. The filtering and smoothing loops are processed in batches using jax.lax.scan(): higher batch sizes will run faster but at the cost of a one-off compilation time."""
+    Written in jax, the lower level functions are jit compiled for speed. The filtering and smoothing loops are processed in batches using jax.lax.scan(): higher batch sizes will run faster but at the cost of a one-off compilation time.
+    
+    The Kalman dynamics equations are as follows:
+    z_t = F @ z_t-1 + q_t-1
+    y_t = H @ z_t + r_t
+    where z_t is the hidden state, y_t is the observation, F is the state transition matrix, H is the observation matrix, q_t ~ N(0, Q) is the state transition noise, and r_t ~ N(0, R) is the observation noise.
+
+    Kalman _filtering_ takes observations and estimates the _causal_ posterior distribution of the hidden state given the observations. Kalman _smoothing_ takes the filtered estimates and estimates the _posterior_ distribution of the hidden state given all the observations.
+    mu_filter_t = E[z_t | y_1:t]
+    sigma_filter_t = Cov[z_t | y_1:t]
+    mu_smooth_t = E[z_t | y_1:T]
+    sigma_smooth_t = Cov[z_t | y_1:T]
+    """
 
     def __init__(self, dim_Z : int, 
                        dim_Y : int,
