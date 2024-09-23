@@ -7,6 +7,7 @@ setuptools.setup(
     name="kalmax",  
     version="0.0.0", 
     author="Tom George",
+    author_email="tomgeorge1@btinternet.com",
     description="Kalman based neural decoding in Jax",
     long_description=long_description,
     long_description_content_type="text/markdown",

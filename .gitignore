@@ -5,4 +5,5 @@ figures/*
 KalMax.egg-info
 data/
 build/
+dist/
 publishing_instructions.md
