@@ -252,7 +252,6 @@ class KalmanFilter:
 
         return logP
 
-
     def _verify_and_tile(self, param, default_param, T, intended_shape):
         """Verifies the shape of the parametery. If the parameter is not passed in, the default parameter (presumably set at initialisation) is tiled T-times along a new 0th axis and used. 
 
