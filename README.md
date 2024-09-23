@@ -25,15 +25,7 @@ Core `KalMax` functions are optimised and jit-compiled in jax making them **very
 
 # Install
 ```
-git clone https://github.com/TomGeorge1234/KalMax.git
-cd KalMax
-pip install -e .
-```
-(`-e`) is optional for developer install. 
-
-Alternatively 
-```
-pip install git+https://github.com/TomGeorge1234/KalMax.git
+pip install kalmax
 ```
 
 # Usage  
