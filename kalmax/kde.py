@@ -15,6 +15,7 @@ def kde(
         kernel : Callable = gaussian_kernel,
         kernel_bandwidth: float = 0.01,
         mask: jnp.ndarray = None,
+        batch_size: int = 36000,
         ) -> jnp.ndarray:
     """
     Performs KDE to estimate the expected number of spikes each neuron will fire at each position in `bins` given past `trajectory` and `spikes` data. This estimate is an expected-spike-count-per-timebin, in order to get firing rate in Hz, divide this by dt.
@@ -42,6 +43,8 @@ def kde(
         The bandwidth of the kernel
     mask : jnp.ndarray, shape (T, N_neurons), optional
         A boolean mask to apply to the spikes. If None, no mask is applied. Default is None.
+    batch_size : int
+        The time axis is split into batches of this size to avoid memory errors, each batch is then processed in series. Default is 36000 (chosen to be 1 hr at 10 and an amount which doesn't crash CPU)
 
     
     Returns
@@ -53,6 +56,8 @@ def kde(
     assert spikes.ndim == 2
 
     N_neurons = spikes.shape[1]
+    N_bins = bins.shape[0]
+    T = trajectory.shape[0]
 
     # If not passed make a trivial mask (all True)
     if mask is None: mask = jnp.ones_like(spikes, dtype=bool)
@@ -61,16 +66,31 @@ def kde(
     kernel_fn = partial(kernel, bandwidth=kernel_bandwidth)
     vmapped_kernel = vmap(vmap(kernel_fn, in_axes=(0, None)), in_axes=(None, 0))
 
-    # Pairwise kernel values for each trajectory-bin position pair. The bulk of the computation is done here. 
-    kernel_values = vmapped_kernel(trajectory, bins) # size (N_bins, T) 
-    
-    # Calculate normalisation position density (the +epsilon is means unvisited positions should approach 0 density and avoid nans)
-    position_density = kernel_values @ mask + 1e-6  # size (N_bins, N_neurons,)
+    spike_density = jnp.zeros((N_bins, N_neurons))
+    position_density = jnp.zeros((N_bins, N_neurons))
 
-    # calculate spike density 
-    spike_density = kernel_values @ (mask*spikes) # size (N_bins, N_neurons,)
-    spike_density = jnp.where(jnp.isnan(spike_density), 0, spike_density) # replace nans from no-spikes with 0
-    
+    N_batchs = int(jnp.ceil(T / batch_size))
+    for i in range(N_batchs):
+        start = i * batch_size
+        end = min((i+1) * batch_size, T)
+        
+        # Get the batch of trajectory, spikes and mask
+        trajectory_batch = trajectory[start:end]
+        spikes_batch = spikes[start:end]
+        mask_batch = mask[start:end]
+
+        # Pairwise kernel values for each trajectory-bin position pair. The bulk of the computation is done here. 
+        kernel_values = vmapped_kernel(trajectory_batch, bins)
+        # Calculate normalisation position density (the +epsilon is means unvisited positions should approach 0 density and avoid nans)
+        position_density_batch = kernel_values @ mask_batch + 1e-6
+        # Calculate spike density, replace nans from no-spikes with 0
+        spike_density_batch = kernel_values @ (mask_batch*spikes_batch)
+        spike_density_batch = jnp.where(jnp.isnan(spike_density_batch), 0, spike_density_batch)
+
+        # Add these to the running total
+        spike_density += spike_density_batch
+        position_density += position_density_batch
+
     # calculate kde at each bin position 
     kernel_density_estimate = jnp.exp(jnp.log(spike_density) - jnp.log(position_density)).T
 
