@@ -1,3 +1,4 @@
+from typing import Callable, Literal, Optional
 import jax 
 import jax.numpy as jnp
 import tqdm as tqdm
@@ -82,7 +83,7 @@ def gaussian_norm_const(sigma : jnp.ndarray) -> jnp.ndarray:
     D = sigma.shape[0]
     return 1 / jnp.sqrt((2 * jnp.pi) ** D * jnp.linalg.det(sigma))
 
-def fit_gaussian(x, likelihood):
+def fit_gaussian(x, likelihood, mask: Optional[jnp.ndarray], y, likelihood_func: Optional[Callable], method: Literal["bayesian_uniform_prior", "frequentist"] = "bayesian_uniform_prior"):
     """Fits a multivariate-Gaussian to the likelihood function P(spikes | x) in x-space.
     
     Parameters
@@ -104,16 +105,49 @@ def fit_gaussian(x, likelihood):
     assert x.ndim == 2
     assert likelihood.ndim == 1
     assert x.shape[0] == likelihood.shape[0]
-    
-    mu = (x.T @ likelihood) / likelihood.sum()
+
     mode = x[jnp.argmax(likelihood)]
-    covariance = ((x - mu) * likelihood[:, None]).T @ (x - mu) / likelihood.sum()
-    return mu, mode, covariance
+
+    if method == "bayesian_uniform_prior":
+        # mu = (x.T @ likelihood) / likelihood.sum()
+        mu = mode
+        covariance = ((x - mu) * likelihood[:, None]).T @ (x - mu) / likelihood.sum()
+        return mu, covariance
+    elif method == "frequentist":
+        assert likelihood_func is not None
+        assert mask is not None
+        mu = mode
+        # compute the Fisher information matrix
+        second_derivative_log_l = jax.jacobian(jax.grad(likelihood_func, argnums=1), argnums=1)(y, mode, mask)
+        covariance = - jnp.linalg.inv(second_derivative_log_l)
+
+        # find minimum eigenvalue
+        # min_eig = jnp.min(jnp.linalg.eigvals(covariance).real)
+        # # make covariance positive definite
+        # covariance = jax.lax.cond(min_eig < 0, lambda: covariance - min_eig * jnp.eye(covariance.shape[0]), lambda: covariance)
+        return mu, covariance
+    else:
+        raise ValueError(f"Unknown method: {method}")
+    
+
+
+
+def _fit_gaussian_bayesian_uniform_prior(x, likelihood):
+    assert x.ndim == 2
+    assert likelihood.ndim == 1
+    assert x.shape[0] == likelihood.shape[0]
+    
+    return mu, covariance
+
+def _fit_gaussian_frequentist(x, likelihood):
+    raise NotImplementedError
+
+
 
 
 # Like fit_gaussian, but accepts likelihoods of shape (T, N_bins)
 # returns means, modes and covariances of shape (T, D), (T, D), (T, D, D)
-fit_gaussian_vmap = jax.vmap(fit_gaussian, in_axes=(None, 0)) 
+fit_gaussian_vmap = jax.vmap(fit_gaussian, in_axes=(None, 0, 0)) 
 
 
 
