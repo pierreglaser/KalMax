@@ -21,6 +21,7 @@ setuptools.setup(
     python_requires='>=3.6',
     install_requires=[
         'jax',
+        'flax',
     ],
     extras_require={
         'demo': ['matplotlib', 'tqdm', 'ratinabox','pykalman'],

@@ -1,3 +1,4 @@
+from math import ceil
 from typing import Callable, Optional
 
 import jax
@@ -7,6 +8,36 @@ from kalmax.utils import gaussian_pdf
 from kalmax.kernels import gaussian_kernel
 
 from functools import partial
+
+
+from flax import struct
+
+
+class NeuronIntensity(struct.PyTreeNode):
+    trajectory: jnp.ndarray
+    spikes: jnp.ndarray
+    kernel: Callable = struct.field(pytree_node=False)
+    kernel_bandwidth: float = 0.01
+    mask: Optional[jnp.ndarray] = None
+
+    def __call__(self, x: jnp.ndarray):
+        return kde_func(
+            x,
+            trajectory=self.trajectory,
+            spikes=self.spikes,
+            kernel=self.kernel,
+            kernel_bandwidth=self.kernel_bandwidth,
+            mask=self.mask  # type: ignore
+        )
+
+
+class LogPSpikesGivenPosition(struct.PyTreeNode):
+    neurons_intensity: NeuronIntensity
+
+    def __call__(self, y, x, mask):
+        return poisson_log_likelihood_from_position(y, self.neurons_intensity, x, mask)
+
+
 
 def kde(
         bins: jnp.ndarray,
@@ -70,7 +101,7 @@ def kde(
     position_density = jnp.zeros((N_bins, N_neurons))
 
     batch_size = 36000
-    N_batchs = int(jnp.ceil(T / batch_size))
+    N_batchs = int(ceil(T / batch_size))
     for i in range(N_batchs):
         start = i * batch_size
         end = min((i+1) * batch_size, T)
@@ -157,7 +188,7 @@ def kde_func(
     spike_density = jnp.zeros((N_neurons,))
     position_density = jnp.zeros((N_neurons,))
 
-    N_batchs = int(jnp.ceil(T / batch_size))
+    N_batchs = int(ceil(T / batch_size))
     for i in range(N_batchs):
         start = i * batch_size
         end = min((i+1) * batch_size, T)
@@ -246,7 +277,7 @@ def kde_func_one_neuron(
     spike_density = 0.
     position_density = 0.
 
-    N_batchs = int(jnp.ceil(T / batch_size))
+    N_batchs = int(ceil(T / batch_size))
     for i in range(N_batchs):
         start = i * batch_size
         end = min((i+1) * batch_size, T)

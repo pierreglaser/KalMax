@@ -118,13 +118,8 @@ def fit_gaussian(x, likelihood, mask: Optional[jnp.ndarray], y, likelihood_func:
         assert mask is not None
         mu = mode
         # compute the Fisher information matrix
-        second_derivative_log_l = jax.jacobian(jax.grad(likelihood_func, argnums=1), argnums=1)(y, mode, mask)
+        second_derivative_log_l = jax.hessian(likelihood_func, argnums=1)(y, mode, mask)
         covariance = - jnp.linalg.inv(second_derivative_log_l)
-
-        # find minimum eigenvalue
-        # min_eig = jnp.min(jnp.linalg.eigvals(covariance).real)
-        # # make covariance positive definite
-        # covariance = jax.lax.cond(min_eig < 0, lambda: covariance - min_eig * jnp.eye(covariance.shape[0]), lambda: covariance)
         return mu, covariance
     else:
         raise ValueError(f"Unknown method: {method}")
